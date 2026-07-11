@@ -15,7 +15,8 @@ from pynput import keyboard
 
 # --- config ---
 MODEL = "mlx-community/whisper-large-v3-turbo"  # fast + accurate on M-series. small.en if you want lighter.
-HOTKEY = keyboard.Key.alt_r                     # hold Right Option to talk. Change to Key.cmd_r etc.
+HOLD_KEY = keyboard.Key.alt_r                   # keyboard: HOLD Right Option to talk (bare modifier = no char emitted).
+TOGGLE_KEY = keyboard.Key.f13                   # macro pad (Ampligame D6): TAP to start, TAP to stop. F13-F20 emit no char.
 SAMPLE_RATE = 16000                             # whisper wants 16k mono
 # ---------------
 
@@ -78,14 +79,16 @@ def main():
     print(f"Loading {MODEL} (first run downloads it)...")
     # warm the model so first real dictation isn't slow
     mlx_whisper.transcribe(np.zeros(SAMPLE_RATE, dtype=np.float32), path_or_hf_repo=MODEL)
-    print(f"Ready. HOLD {HOTKEY} to dictate, release to paste. Ctrl+C to quit.")
+    print(f"Ready. HOLD {HOLD_KEY} (keyboard) or TAP {TOGGLE_KEY} (macro pad) to dictate. Ctrl+C to quit.")
 
     def on_press(key):
-        if key == HOTKEY:
+        if key == HOLD_KEY:
             _start()
+        elif key == TOGGLE_KEY:
+            _stop() if _recording else _start()
 
     def on_release(key):
-        if key == HOTKEY:
+        if key == HOLD_KEY:
             _stop()
 
     with keyboard.Listener(on_press=on_press, on_release=on_release) as listener:
